@@ -1,0 +1,135 @@
+# DNA Test Data Generator
+
+A massive DNA data generation tool designed for **Parallel String Matching** research.
+It supports generating DNA sequences up to **10¹² (1 TB)** in length, specifically for benchmarking algorithms like Brute-force, KMP, Boyer-Moore, and Rabin–Karp in GPU or multi-core environments.
+
+This tool utilizes **streaming writing** techniques to generate massive datasets without loading the entire text into memory, making it suitable for generating TB-scale data on cluster environments.
+
+## ✨ Features
+
+1.  **Match Density Test Sets (100 sets)**
+    *   Generates 100 sets with match densities ranging from low to high.
+    *   Used to observe the impact of pattern density on the performance of different algorithms.
+
+2.  **Pattern Length vs Throughput**
+    *   Automatically generates datasets with varying pattern lengths (e.g., 8, 16, 32, ...) to analyze throughput scaling.
+
+3.  **Front vs Back Matches**
+    *   Tests performance differences when all matches are concentrated at the beginning versus at the end of the text.
+    *   Particularly useful for analyzing the skipping behavior of algorithms like Boyer–Moore and Rabin–Karp.
+
+## 📦 Installation
+
+No external packages are required. Python 3 is sufficient.
+Simply place `dna_generator.py` in your project directory.
+
+## 🚀 Usage
+
+### 1. Match Density (100 Sets)
+
+Generate 100 datasets with varying densities:
+
+```bash
+python dna_generator.py density \
+    --out_dir data_density \
+    --text_len 100000000 \
+    --pattern_len 64 \
+    --num_cases 100 \
+    --min_density 1e-6 \
+    --max_density 1e-1
+```
+
+**Output structure:**
+
+```
+data_density/
+    density_pattern_len64_pattern.txt
+    density_case_000_d1e-06_text.txt
+    ...
+    density_case_099_d1e-01_text.txt
+```
+
+To generate truly large tests (1 TB each), use:
+
+```bash
+python dna_generator.py density \
+    --out_dir data_density_1e12 \
+    --text_len 1000000000000 \
+    --pattern_len 64
+```
+
+⚠️ **Ensure sufficient disk space on the cluster (up to 1 TB per set).**
+
+### 2. Pattern Length vs Throughput
+
+Analyze the impact of different pattern lengths on throughput:
+
+```bash
+python dna_generator.py plen \
+    --out_dir data_plen \
+    --text_len 100000000 \
+    --pattern_lengths 8 16 32 64 128 256 512 1024 \
+    --target_density 1e-4
+```
+
+**Output:**
+
+```
+data_plen/
+    plen_8_pattern.txt
+    plen_8_text.txt
+    ...
+    plen_1024_pattern.txt
+    plen_1024_text.txt
+```
+
+### 3. Front vs Back Matches
+
+Test the performance difference between front-loaded and back-loaded matches:
+
+```bash
+python dna_generator.py frontback \
+    --out_dir data_frontback \
+    --text_len 100000000 \
+    --pattern_len 64 \
+    --density 1e-4
+```
+
+**Output:**
+
+```
+data_frontback/
+    front_back_pattern_len64_pattern.txt
+    front_matches_text.txt
+    back_matches_text.txt
+```
+
+## ⚙️ Parameter Explanation
+
+- `--text_len`: Specifies the text length, up to 10¹². Massive data is written to disk in chunks, preventing memory overload.
+- `--pattern_len`: Specifies the pattern length.
+- `--density`: Density is estimated as matches / (text_len - pattern_len + 1).
+- `--num_cases`: Number of data sets to generate in density mode.
+
+## 🧬 Technical Details
+
+This tool uses:
+
+- ✔ **DNA Alphabet**: ACGT, suitable for bioinformatics and DNA matching research.
+- ✔ **Streaming Text Generation**: Generates data in small chunks (default 10⁷ chars) to ensure:
+  - No RAM overload
+  - Suitable for long-term TB-level testing on HPC/GPU clusters
+- ✔ **Controllable Match Positions**: Specify:
+  - Spread across multiple areas (density mode)
+  - All concentrated at the front (front case)
+  - All concentrated at the end (back case)
+  - Facilitates testing of skipping behaviors in algorithms like Boyer–Moore and Rabin–Karp.
+
+## 📈 Use Cases (Aligned with Your Research)
+
+This tool is designed to test various pattern matching algorithm parallelization strategies, including:
+
+- 🟦 **Brute-force**: Highly data-parallel, best for testing the impact of density and position on throughput.
+- 🟨 **KMP**: Has sequential dependency, front/back cases can test prefix table and scanning behavior differences.
+- 🟥 **Boyer–Moore**: Features heuristic-based jumps, shows strongest jump performance when matches are at the back, and performance may decrease with high match density.
+- 🟩 **Rabin–Karp**: Hash-based, suitable for coarse-grained and position-level parallelism, effective for analyzing performance scaling with density and pattern-length cases.
